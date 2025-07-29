@@ -1,0 +1,23 @@
+<template>
+  <div class="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gray-50">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+      <div class="text-center">
+        <h1 class="text-3xl font-bold text-gray-900">Contact Management</h1>
+        <p class="mt-2 text-sm text-gray-600">Manage your contacts efficiently</p>
+      </div>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+      <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+        <RouterView />
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <NotificationContainer />
+  </div>
+</template>
+
+<script setup lang="ts">
+import NotificationContainer from '@/components/ui/NotificationContainer.vue';
+</script> 
