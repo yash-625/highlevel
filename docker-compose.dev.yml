@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: auth_mongodb_dev
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: auth_db
+    volumes:
+      - mongodb_data_dev:/data/db
+      - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - auth_network_dev
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Node.js API Server (Development with Hot Reload)
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: auth_api_dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+      - "9229:9229"  # Debug port
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      MONGODB_URI: mongodb://appuser:apppass@mongodb:27017/auth_db
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production-minimum-32-characters
+      JWT_EXPIRE: 24h
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX_REQUESTS: 100
+      CORS_ORIGIN: http://localhost:3000
+      # Enable polling for file changes (important for Windows/Docker)
+      CHOKIDAR_USEPOLLING: true
+      CHOKIDAR_INTERVAL: 1000
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    volumes:
+      # Mount source code for hot reload (bind mount, not named volume)
+      - type: bind
+        source: ./src
+        target: /app/src
+      - type: bind
+        source: ./package.json
+        target: /app/package.json
+      - type: bind
+        source: ./package-lock.json
+        target: /app/package-lock.json
+      - type: bind
+        source: ./tsconfig.json
+        target: /app/tsconfig.json
+      - type: bind
+        source: ./nodemon.json
+        target: /app/nodemon.json
+      # Anonymous volume to preserve node_modules
+      - /app/node_modules
+      # Logs directory
+      - ./logs:/app/logs
+    networks:
+      - auth_network_dev
+    # Override the default command to ensure nodemon runs with proper flags
+    command: ["npm", "run", "dev:debug"]
+
+volumes:
+  mongodb_data_dev:
+    driver: local
+
+networks:
+  auth_network_dev:
+    driver: bridge
