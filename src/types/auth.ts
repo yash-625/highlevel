@@ -7,6 +7,7 @@ export interface RegisterRequest {
   email: string;
   name: string;
   password: string;
+  organizationName: string; // New field for organization
 }
 
 // Login request body
@@ -15,11 +16,13 @@ export interface LoginRequest {
   password: string;
 }
 
-// JWT payload
+// Updated JWT payload with organizationId
 export interface JWTPayload {
   userId: string;
+  organizationId: string;
   username: string;
   email: string;
+  isActive: boolean;
 }
 
 // Extended Request interface with user
@@ -41,7 +44,23 @@ export interface AuthResponse {
     username: string;
     email: string;
     name: string;
+    organizationId: string;
+    organizationName: string;
+    isActive: boolean;
     createdAt: Date;
   };
   token: string;
+}
+
+// Contact API Types
+export interface CreateContactRequest {
+  name: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface AddNoteRequest {
+  content: string;
+  type?: 'call' | 'meeting' | 'email' | 'general';
+  isPrivate?: boolean;
 }

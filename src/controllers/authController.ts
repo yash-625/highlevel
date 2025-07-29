@@ -1,16 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
-import { RegisterRequest, LoginRequest, ApiResponse, AuthResponse, AuthenticatedRequest } from '../types/auth';
+import { AuthenticatedRequest, ApiResponse, RegisterRequest, LoginRequest } from '../types/auth';
 import authService from '../services/authService';
 
 class AuthController {
-  // Register new user
-  async register(
-    req: Request<{}, ApiResponse<AuthResponse>, RegisterRequest>,
-    res: Response<ApiResponse<AuthResponse>>,
-    next: NextFunction
-  ): Promise<void> {
+  /**
+   * Register a new user with organization
+   * POST /api/auth/register
+   */
+  async register(req: Request, res: Response<ApiResponse>, next: NextFunction): Promise<void> {
     try {
-      const userData: RegisterRequest = req.body;
+      const userData: RegisterRequest = {
+        username: req.body.username,
+        email: req.body.email,
+        name: req.body.name,
+        password: req.body.password,
+        organizationName: req.body.organizationName
+      };
+
       const result = await authService.registerUser(userData);
 
       res.status(201).json({
@@ -23,14 +29,17 @@ class AuthController {
     }
   }
 
-  // Login user
-  async login(
-    req: Request<{}, ApiResponse<AuthResponse>, LoginRequest>,
-    res: Response<ApiResponse<AuthResponse>>,
-    next: NextFunction
-  ): Promise<void> {
+  /**
+   * Login user
+   * POST /api/auth/login
+   */
+  async login(req: Request, res: Response<ApiResponse>, next: NextFunction): Promise<void> {
     try {
-      const loginData: LoginRequest = req.body;
+      const loginData: LoginRequest = {
+        username: req.body.username,
+        password: req.body.password,
+      };
+
       const result = await authService.loginUser(loginData);
 
       res.status(200).json({
@@ -43,20 +52,18 @@ class AuthController {
     }
   }
 
-  // Get user profile (protected route)
-  async getProfile(
-    req: AuthenticatedRequest,
-    res: Response<ApiResponse>,
-    next: NextFunction
-  ): Promise<void> {
+  /**
+   * Get user profile
+   * GET /api/auth/profile
+   */
+  async getProfile(req: AuthenticatedRequest, res: Response<ApiResponse>, next: NextFunction): Promise<void | any>  {
     try {
       if (!req.user) {
-        res.status(401).json({
+        return res.status(401).json({
           success: false,
           message: 'User not authenticated',
-          error: 'User information missing from request',
+          error: 'No user found in request',
         });
-        return;
       }
 
       const user = await authService.getUserProfile(req.user._id.toString());
@@ -69,8 +76,9 @@ class AuthController {
           username: user.username,
           email: user.email,
           name: user.name,
+          organizationId: user.organizationId.toString(),
+          isActive: user.isActive,
           createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
         },
       });
     } catch (error) {

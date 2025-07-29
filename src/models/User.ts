@@ -10,6 +10,8 @@ export interface IUser extends Document {
   password: string;
   createdAt: Date;
   updatedAt: Date;
+  organizationId: mongoose.Types.ObjectId,
+  isActive: boolean,
   // Methods
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
@@ -51,6 +53,16 @@ const userSchema = new Schema<IUser>(
       minlength: [6, 'Password must be at least 6 characters long'],
       select: false, // Don't include password in queries by default
     },
+    organizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization',
+      required: [true, 'Organization ID is required'],
+      index: true
+    },
+    isActive: {
+      type: Boolean,
+      default: true
+    }
   },
   {
     timestamps: true,

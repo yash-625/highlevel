@@ -1,9 +1,12 @@
+
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest, ApiResponse } from '../types/auth';
 import { verifyToken } from '../utils/jwt';
 import User from '../models/User';
 
-// Middleware to authenticate JWT token
+/**
+ * Multi-tenant authentication middleware
+ */
 export const authenticate = async (
   req: AuthenticatedRequest,
   res: Response<ApiResponse>,
@@ -12,7 +15,6 @@ export const authenticate = async (
   try {
     const authHeader = req.headers.authorization;
 
-    // Check if authorization header exists and starts with 'Bearer '
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       res.status(401).json({
         success: false,
@@ -22,9 +24,7 @@ export const authenticate = async (
       return;
     }
 
-    // Extract token from header
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-
+    const token = authHeader.substring(7);
     if (!token) {
       res.status(401).json({
         success: false,
@@ -37,14 +37,31 @@ export const authenticate = async (
     // Verify token
     const decoded = verifyToken(token);
 
-    // Find user by ID from token
-    const user = await User.findById(decoded.userId).select('-password');
+    // Find user with organization validation
+    const user = await User.findOne({
+      _id: decoded.userId,
+      organizationId: decoded.organizationId,
+      isActive: true
+    })
+    .populate('organizationId', 'name status')
+    .select('-password');
 
     if (!user) {
       res.status(401).json({
         success: false,
-        message: 'Access denied. User not found.',
-        error: 'User associated with token does not exist',
+        message: 'Access denied. User not found or inactive.',
+        error: 'User associated with token does not exist or is inactive',
+      });
+      return;
+    }
+
+    // Check organization status
+    const organization = user.organizationId as any;
+    if (!organization || organization.status !== 'active') {
+      res.status(403).json({
+        success: false,
+        message: 'Access denied. Organization is not active.',
+        error: 'Organization associated with user is not active',
       });
       return;
     }

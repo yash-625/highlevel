@@ -1,45 +1,54 @@
-import { body, ValidationChain } from 'express-validator';
+import { body } from 'express-validator';
 
-// Register validation rules
-export const registerValidation: ValidationChain[] = [
+export const registerValidation = [
   body('username')
-    .trim()
+    .isString()
+    .notEmpty()
+    .withMessage('Username is required')
     .isLength({ min: 3, max: 30 })
     .withMessage('Username must be between 3 and 30 characters')
     .matches(/^[a-zA-Z0-9_]+$/)
     .withMessage('Username can only contain letters, numbers, and underscores')
+    .trim()
     .toLowerCase(),
 
   body('email')
-    .trim()
     .isEmail()
     .withMessage('Please provide a valid email address')
-    .normalizeEmail()
-    .toLowerCase(),
+    .normalizeEmail(),
 
   body('name')
-    .trim()
+    .isString()
+    .notEmpty()
+    .withMessage('Name is required')
     .isLength({ min: 2, max: 50 })
     .withMessage('Name must be between 2 and 50 characters')
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage('Name can only contain letters and spaces'),
+    .trim(),
 
   body('password')
-    .isLength({ min: 6, max: 128 })
-    .withMessage('Password must be between 6 and 128 characters')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-    .withMessage('Password must contain at least one lowercase letter, one uppercase letter, and one number'),
-];
+    .isString()
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters long'),
 
-// Login validation rules
-export const loginValidation: ValidationChain[] = [
-  body('username')
+  body('organizationName')
+    .isString()
+    .notEmpty()
+    .withMessage('Organization name is required')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Organization name must be between 2 and 100 characters')
     .trim()
+];
+
+export const loginValidation = [
+  body('username')
+    .isString()
     .notEmpty()
-    .withMessage('Username is required')
-    .toLowerCase(),
+    .withMessage('Username or email is required')
+    .trim(),
 
   body('password')
+    .isString()
     .notEmpty()
-    .withMessage('Password is required'),
+    .withMessage('Password is required')
 ];
+

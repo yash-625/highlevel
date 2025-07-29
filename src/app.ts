@@ -6,10 +6,12 @@ import rateLimit from 'express-rate-limit';
 // Import routes
 import authRoutes from './routes/authRoutes';
 import healthRoutes from './routes/healthRoutes'
+import contactRoutes from './routes/contactRoutes'
 
 // Import middleware
 import { errorHandler } from './middlewares/errorMiddleware';
 import { notFound } from './middlewares/notFoundMiddleware';
+import { authenticate } from './middlewares/authMiddleware';
 
 const app: Express = express();
 
@@ -39,6 +41,8 @@ app.use('/api/health', healthRoutes);
 
 // API routes
 app.use('/api/auth', authRoutes);
+
+app.use('/api/contacts', authenticate, contactRoutes)
 
 // 404 handler
 app.use(notFound);
