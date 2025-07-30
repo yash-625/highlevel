@@ -1,132 +1,119 @@
-import { defineStore } from 'pinia';
-import { ref, computed, readonly } from 'vue';
-import { authService } from '@/services/auth';
-import { tokenStorage, userStorage } from '@/utils/storage';
-import { handleApiError } from '@/utils/error';
-import type { User, RegisterRequest, LoginRequest } from '@/types/api';
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { apiService } from '../services/api'
+import { useToastStore } from './toast'
+import type { User, LoginCredentials, RegisterData } from '../types'
+
+interface AuthResult {
+  success: boolean
+  error?: string
+}
 
 export const useAuthStore = defineStore('auth', () => {
-  // State
-  const user = ref<User | null>(null);
-  const token = ref<string | null>(null);
-  const loading = ref(false);
-  const error = ref<string | null>(null);
+  const user = ref<User | null>(null)
+  const token = ref<string | null>(localStorage.getItem('auth_token'))
+  const loading = ref<boolean>(false)
 
-  // Getters
-  const isAuthenticated = computed(() => !!user.value && !!token.value);
-  const organizationName = computed(() => user.value?.organizationName || '');
-  const userName = computed(() => user.value?.name || '');
+  const toastStore = useToastStore()
 
-  // Actions
-  async function register(data: RegisterRequest): Promise<boolean> {
-    loading.value = true;
-    error.value = null;
+  const isAuthenticated = computed<boolean>(() => !!token.value && !!user.value)
 
+  const setToken = (newToken: string): void => {
+    token.value = newToken
+    localStorage.setItem('auth_token', newToken)
+    apiService.setToken(newToken)
+  }
+
+  const clearAuth = (): void => {
+    user.value = null
+    token.value = null
+    localStorage.removeItem('auth_token')
+    apiService.removeToken()
+  }
+
+  const login = async (credentials: LoginCredentials): Promise<AuthResult> => {
     try {
-      const response = await authService.register(data);
+      loading.value = true
+      const response = await apiService.login(credentials)
       
-      if (response.success && response.data) {
-        setAuthData(response.data.user, response.data.token);
-        return true;
+      if (response.success) {
+        user.value = response.data.user
+        setToken(response.data.token)
+        toastStore.showToast('Login successful!', 'success')
+        return { success: true }
       }
       
-      throw new Error(response.message || 'Registration failed');
-    } catch (err) {
-      const errorInfo = handleApiError(err);
-      error.value = errorInfo.message;
-      return false;
+      return { success: false, error: response.message }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Login failed'
+      toastStore.showToast(errorMessage, 'error')
+      return { success: false, error: errorMessage }
     } finally {
-      loading.value = false;
+      loading.value = false
     }
   }
 
-  async function login(data: LoginRequest): Promise<boolean> {
-    loading.value = true;
-    error.value = null;
-
+  const register = async (userData: RegisterData): Promise<AuthResult> => {
     try {
-      const response = await authService.login(data);
+      loading.value = true
+      const response = await apiService.register(userData)
       
-      if (response.success && response.data) {
-        setAuthData(response.data.user, response.data.token);
-        return true;
+      if (response.success) {
+        user.value = response.data.user
+        setToken(response.data.token)
+        toastStore.showToast('Registration successful!', 'success')
+        return { success: true }
       }
       
-      throw new Error(response.message || 'Login failed');
-    } catch (err) {
-      const errorInfo = handleApiError(err);
-      error.value = errorInfo.message;
-      return false;
+      return { success: false, error: response.message }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed'
+      toastStore.showToast(errorMessage, 'error')
+      return { success: false, error: errorMessage }
     } finally {
-      loading.value = false;
+      loading.value = false
     }
   }
 
-  async function getProfile(): Promise<void> {
-    if (!token.value) return;
+  const logout = (): void => {
+    clearAuth()
+    toastStore.showToast('Logged out successfully', 'success')
+  }
 
+  const getProfile = async (): Promise<void> => {
     try {
-      const response = await authService.getProfile();
-      
+      const response = await apiService.getProfile()
       if (response.success && response.data) {
-        user.value = response.data;
-        userStorage.set(response.data);
+        user.value = response.data
       }
-    } catch (err) {
-      console.error('Failed to get profile:', err);
-      // Don't logout on profile fetch failure, just log the error
+    } catch (error) {
+      // Token might be invalid, clear auth
+      clearAuth()
+      throw error
     }
   }
 
-  function logout(): void {
-    user.value = null;
-    token.value = null;
-    error.value = null;
-    tokenStorage.remove();
-    userStorage.remove();
-  }
-
-  function setAuthData(userData: User, authToken: string): void {
-    user.value = userData;
-    token.value = authToken;
-    tokenStorage.set(authToken);
-    userStorage.set(userData);
-  }
-
-  function initializeFromStorage(): void {
-    const storedToken = tokenStorage.get();
-    const storedUser = userStorage.get();
-
-    if (storedToken && storedUser) {
-      token.value = storedToken;
-      user.value = storedUser;
-      // Optionally refresh profile from server
-      getProfile();
+  // Initialize auth state if token exists
+  const initializeAuth = async (): Promise<void> => {
+    if (token.value) {
+      apiService.setToken(token.value)
+      try {
+        await getProfile()
+      } catch (error) {
+        clearAuth()
+      }
     }
-  }
-
-  function clearError(): void {
-    error.value = null;
   }
 
   return {
-    // State
-    user: readonly(user),
-    token: readonly(token),
-    loading: readonly(loading),
-    error: readonly(error),
-    
-    // Getters
+    user,
+    token,
+    loading,
     isAuthenticated,
-    organizationName,
-    userName,
-    
-    // Actions
-    register,
     login,
+    register,
     logout,
     getProfile,
-    initializeFromStorage,
-    clearError
-  };
-}); 
+    initializeAuth
+  }
+})

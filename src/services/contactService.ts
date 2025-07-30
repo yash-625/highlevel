@@ -28,15 +28,15 @@ class ContactService {
         const { name, email, phone } = contactData;
 
         // Check for duplicate email within organization
-        if (email) {
+        if (phone) {
           const existingContact = await Contact.findOne({
             organizationId: auditContext.organizationId,
-            email: email.toLowerCase(),
+            phone: phone,
             status: { $ne: 'archived' }
           });
 
           if (existingContact) {
-            throw new AppError('Email already exists in your organization', 409);
+            throw new AppError('Phone already exists in your organization', 409);
           }
         }
 

@@ -61,7 +61,7 @@ router.post(
 
 // Audit logs route
 router.get(
-  '/:contactId/audit-logs',
+  '/:id/audit-logs',
   getContactValidation,
   handleValidationErrors,
   contactController.getContactAuditLogs

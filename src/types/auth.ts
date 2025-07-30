@@ -36,6 +36,7 @@ export interface ApiResponse<T = any> {
   message: string;
   data?: T;
   error?: string;
+  pagination?: any
 }
 
 export interface AuthResponse {

@@ -243,7 +243,7 @@ class ContactController {
         success: true,
         message: 'Contacts retrieved successfully',
         data: result.contacts,
-        // pagination: result.pagination
+        pagination: result.pagination
       });
 
     } catch (error) {
@@ -265,7 +265,7 @@ class ContactController {
         throw new AppError('User not authenticated', 401);
       }
 
-      const contactId = req.params.contactId as string;
+      const contactId = req.params.id as string;
       const organizationId = req.user.organizationId._id.toString();
       const options = {
         page: parseInt(req.query.page as string) || 1,
@@ -278,7 +278,7 @@ class ContactController {
         success: true,
         message: 'Audit logs retrieved successfully',
         data: result.auditLogs,
-        // pagination: result.pagination
+        pagination: result.pagination
       });
 
     } catch (error) {

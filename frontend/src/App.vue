@@ -1,27 +1,44 @@
 <template>
   <div id="app">
-    <RouterView />
+    <!-- Toast Notifications -->
+    <div v-if="toast" class="toast toast-top toast-end z-50">
+      <div :class="toastClass">
+        <span>{{ toast.message }}</span>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <router-view />
   </div>
 </template>
 
-<script setup lang="ts">
-import { onMounted, nextTick } from 'vue';
-import { useRouter } from 'vue-router';
+<script setup>
+import { computed } from 'vue'
+import { useToastStore } from './stores/toast'
 
-// We'll initialize auth after the component is mounted and Pinia is ready
-onMounted(async () => {
-  // Wait for next tick to ensure Pinia is fully initialized
-  await nextTick();
-  
-  // Dynamically import the auth store to avoid initialization issues
-  const { useAuthStore } = await import('@/stores/auth');
-  const authStore = useAuthStore();
-  
-  // Initialize authentication state from localStorage
-  authStore.initializeFromStorage();
-});
+const toastStore = useToastStore()
+
+const toast = computed(() => toastStore.toast)
+
+const toastClass = computed(() => {
+  if (!toast.value) return ''
+  const baseClass = 'alert'
+  switch (toast.value.type) {
+    case 'success':
+      return `${baseClass} alert-success`
+    case 'error':
+      return `${baseClass} alert-error`
+    case 'warning':
+      return `${baseClass} alert-warning`
+    default:
+      return `${baseClass} alert-info`
+  }
+})
 </script>
 
 <style>
-/* Global styles are handled by Tailwind CSS in style.css */
+/* DaisyUI will handle most styling */
+#app {
+  min-height: 100vh;
+}
 </style>
