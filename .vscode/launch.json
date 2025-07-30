@@ -1,0 +1,66 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Docker: Attach to Node",
+        "type": "node",
+        "request": "attach",
+        "restart": true,
+        "port": 9229,
+        "address": "localhost",
+        "localRoot": "${workspaceFolder}",
+        "remoteRoot": "/app",
+        "protocol": "inspector",
+        "skipFiles": [
+          "<node_internals>/**",
+          "**/node_modules/**"
+        ],
+        "trace": "verbose",
+        "sourceMaps": true,
+        "smartStep": true,
+        "stopOnEntry": false,
+        "console": "integratedTerminal",
+        "envFile": "${workspaceFolder}/.env"
+      },
+      {
+        "name": "Docker: Launch & Attach",
+        "type": "node",
+        "request": "attach",
+        "restart": true,
+        "port": 9229,
+        "address": "localhost",
+        "localRoot": "${workspaceFolder}",
+        "remoteRoot": "/app",
+        "protocol": "inspector",
+        "skipFiles": [
+          "<node_internals>/**",
+          "**/node_modules/**"
+        ],
+        "preLaunchTask": "docker:dev:up",
+        "postDebugTask": "docker:dev:logs"
+      },
+      {
+        "name": "Local: Debug TypeScript",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder}/src/server.ts",
+        "outDir": "${workspaceFolder}/dist",
+        "runtimeArgs": [
+          "--loader",
+          "ts-node/esm"
+        ],
+        "env": {
+          "NODE_ENV": "development",
+          "TS_NODE_PROJECT": "${workspaceFolder}/tsconfig.json"
+        },
+        "envFile": "${workspaceFolder}/.env",
+        "sourceMaps": true,
+        "restart": true,
+        "console": "integratedTerminal",
+        "skipFiles": [
+          "<node_internals>/**",
+          "**/node_modules/**"
+        ]
+      }
+    ]
+  }
